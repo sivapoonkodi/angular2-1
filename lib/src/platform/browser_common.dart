@@ -65,7 +65,6 @@ const List<dynamic> BROWSER_APP_COMMON_PROVIDERS = const [
   HammerGesturesPlugin,
   const Provider(EVENT_MANAGER_PLUGINS, useFactory: createEventPlugins),
   const Provider(HAMMER_GESTURE_CONFIG, useClass: HammerGestureConfig),
-  Testability,
   EventManager,
 ];
 
@@ -80,6 +79,6 @@ List<EventManagerPlugin> createEventPlugins(DomEventsPlugin dom,
 
 Function createInitDomAdapter(TestabilityRegistry testabilityRegistry) {
   return () {
-    testabilityRegistry.setTestabilityGetter(new BrowserGetTestability());
+    //testabilityRegistry.setTestabilityGetter(new BrowserGetTestability());
   };
 }

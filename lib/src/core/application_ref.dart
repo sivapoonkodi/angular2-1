@@ -369,12 +369,13 @@ class ApplicationRefImpl extends ApplicationRef {
         _unloadComponent(compRef);
         replacement?.remove();
       });
+      /*
       var testability = compRef.injector.get(Testability, null);
       if (testability != null) {
         compRef.injector
             .get(TestabilityRegistry)
             .registerApplication(compRef.location.nativeElement, testability);
-      }
+      }*/
       _loadComponent(compRef);
       return compRef;
     });
