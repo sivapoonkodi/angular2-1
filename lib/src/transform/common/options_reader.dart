@@ -22,7 +22,9 @@ TransformerOptions parseBarbackSettings(BarbackSettings settings) {
   var formatCode = _readBool(config, FORMAT_CODE_PARAM, defaultValue: false);
   var useLegacyStyleEncapsulation =
       _readBool(config, USE_LEGACY_STYLE_ENCAPSULATION, defaultValue: false);
-  var useAnalyzer = _readBool(config, USE_ANALYZER, defaultValue: false);
+  var useAnalyzer = _readBool(config, USE_ANALYZER,
+      defaultValue: const bool.fromEnvironment('angular2.force_use_analyzer',
+          defaultValue: false));
   String mirrorModeVal =
       config.containsKey(MIRROR_MODE_PARAM) ? config[MIRROR_MODE_PARAM] : '';
   var mirrorMode = MirrorMode.none;
