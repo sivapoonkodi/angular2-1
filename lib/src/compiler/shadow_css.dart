@@ -203,6 +203,12 @@ bool matchesElement(SelectorGroup selectorGroup, String name) {
 Iterable<SimpleSelectorSequence> clone(Iterable<SimpleSelectorSequence> it) =>
     it.map((selector) => selector.clone());
 
+SimpleSelectorSequence createElementSelectorSequence(String name) {
+  var identifier = new Identifier(name, null);
+  var selector = new ElementSelector(identifier, null);
+  return new SimpleSelectorSequence(selector, null);
+}
+
 /// Convenience function for terse construction of a class sequence.
 SimpleSelectorSequence createClassSelectorSequence(String name) {
   var identifier = new Identifier(name, null);
@@ -297,6 +303,22 @@ class CompoundSelector {
   bool get containsHostContext {
     for (var sequence in _sequences) {
       if (isHostContextFunction(sequence.simpleSelector)) return true;
+    }
+    return false;
+  }
+
+  /// Replaces this with an empty type selector if it's `::ng-deep`.
+  ///
+  /// `::ng-deep` is replaced with an empty tag, rather than removed, to
+  /// preserve adjacent combinators.
+  ///
+  /// Returns true if a replacement occurs.
+  bool removeIfNgDeep() {
+    if (_sequences.isEmpty) return false;
+    final selector = _sequences.first.simpleSelector;
+    if (selector is PseudoElementSelector && selector.name == 'ng-deep') {
+      _sequences = [createElementSelectorSequence('')..combinator = combinator];
+      return true;
     }
     return false;
   }
@@ -465,25 +487,17 @@ class ShadowTransformer extends Visitor {
   void shimDeepCombinators(ComplexSelector selector, Indices indices) {
     for (var i = selector.compoundSelectors.length - 1; i >= 0; i--) {
       var compoundSelector = selector.compoundSelectors[i];
-      switch (compoundSelector.combinator) {
-        case TokenKind.COMBINATOR_DEEP:
-        case TokenKind.COMBINATOR_SHADOW_PIERCING_DESCENDANT:
-          // Replace shadow piercing combinator with descendant combinator.
-          compoundSelector.combinator = TokenKind.COMBINATOR_DESCENDANT;
-          indices.deepIndex = i;
-          break;
-        case TokenKind.COMBINATOR_PLUS:
-        case TokenKind.COMBINATOR_TILDE:
-          if (i > 0) {
-            var precedingSelector = selector.compoundSelectors[i - 1];
-            if (precedingSelector.containsHost ||
-                precedingSelector.containsHostContext) {
-              // Prevent scoping host siblings.
-              indices.deepIndex = i;
-              indices.hostIndex = i - 1;
-            }
-          }
-          break;
+
+      // Shim '::ng-deep'
+      if (compoundSelector.removeIfNgDeep()) indices.deepIndex = i;
+
+      // Shim deprecated '>>>' and '/deep/'.
+      if (compoundSelector.combinator == TokenKind.COMBINATOR_DEEP ||
+          compoundSelector.combinator ==
+              TokenKind.COMBINATOR_SHADOW_PIERCING_DESCENDANT) {
+        // Replace shadow piercing combinator with descendant combinator.
+        compoundSelector.combinator = TokenKind.COMBINATOR_DESCENDANT;
+        indices.deepIndex = i;
       }
     }
   }
@@ -615,6 +629,8 @@ class LegacyShadowTransformer extends ShadowTransformer {
         // Don't scope selectors following a shadow host selector.
         indices.deepIndex = i;
         indices.hostIndex = i;
+      } else if (compoundSelector.removeIfNgDeep()) {
+        indices.deepIndex = i;
       }
       if (compoundSelector.combinator == TokenKind.COMBINATOR_DEEP ||
           compoundSelector.combinator ==

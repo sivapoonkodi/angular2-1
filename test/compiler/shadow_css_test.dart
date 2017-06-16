@@ -114,11 +114,6 @@ void main() {
       shimAndExpect(':host.x::before {}', '.$host.x::before {}');
     });
 
-    test("shouldn't scope siblings", () {
-      shimAndExpect(':host + .x {}', '.$host + .x {}');
-      shimAndExpect(':host ~ .x {}', '.$host ~ .x {}');
-    });
-
     test('should differentiate legacy encapsulation', () {
       shimAndExpect(':host p {}', '.$host p.$content {}',
           expectedLegacy: '.$host p {}');
@@ -172,11 +167,6 @@ void main() {
     test('should handle multiple selectors', () {
       shimAndExpect(':host(.x),:host(a) {}', '.$host.x,a.$host {}');
     });
-
-    test("shouldn't shim siblings", () {
-      shimAndExpect(':host(.x) + .y {}', '.$host.x + .y {}');
-      shimAndExpect(':host(.x) ~ .y {}', '.$host.x ~ .y {}');
-    });
   });
 
   group(':host-context()', () {
@@ -227,13 +217,6 @@ void main() {
       var css = ':host-context(.x),:host-context(.y) {}';
       var expected = '.$host.x,.x .$host,.$host.y,.y .$host {}';
       shimAndExpect(css, expected);
-    });
-
-    test("shouldn't shim siblings", () {
-      var css = ':host-context(.x) + .y {}';
-      shimAndExpect(css, '.$host.x + .y,.x .$host + .y {}');
-      css = ':host-context(.x) ~ .y {}';
-      shimAndExpect(css, '.$host.x ~ .y,.x .$host ~ .y {}');
     });
   });
 
@@ -321,6 +304,19 @@ void main() {
     shimAndExpect(css, 'x.$content y {}');
     css = 'x /deep/ >>> y {}';
     shimAndExpect(css, 'x.$content y {}');
+  });
+
+  test('should handle ::ng-deep', () {
+    var css = '::ng-deep y {}';
+    shimAndExpect(css, 'y {}');
+    css = 'x ::ng-deep y {}';
+    shimAndExpect(css, 'x.$content y {}');
+    css = ':host > ::ng-deep .x {}';
+    shimAndExpect(css, '.$host > .x {}');
+    css = ':host ::ng-deep > .x {}';
+    shimAndExpect(css, '.$host > .x {}');
+    css = ':host > ::ng-deep > .x {}';
+    shimAndExpect(css, '.$host > > .x {}');
   });
 
   test('should pass through @import directives', () {
